@@ -1,0 +1,8 @@
+.vagrant/
+.venv/
+.idea/
+logs/
+apps/
+.coverage
+*.iml
+.DS_Store

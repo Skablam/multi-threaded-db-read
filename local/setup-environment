@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+HOME='/home/vagrant'
+
+# Check yo' privledge
+# if [ $(id -u) != 0 ]; then
+#   echo "You must be root to run $0"
+#   exit 1
+# fi
+
+if [[ ! $(id vagrant) ]]; then
+  echo "You must run $0 inside your Vagrant environment"
+  exit 1
+fi
+
+# Just for ease of use, let's autoswap to the workspace folder
+sed -i -e 's/.*switch to workspace//' ${HOME}/.bash_profile # really hacky idempotency
+echo 'cd /vagrant; # switch to workspace' >> ${HOME}/.bash_profile
+
+# Add ./local to PATH
+sed -i -e 's/.*add local dir to path//' ${HOME}/.bash_profile
+echo 'export PATH=$PATH:/vagrant/local' >> ${HOME}/.bash_profile
+# Initially we need to install a load of junk thats not provided by landregistry/centos
+echo "- - - Installing system dependencies - - -"
+sudo yum install -q -y git GitPython PyYAML python-devel python-pip python-virtualenv
+
+# system update
+yum -y update
+yum -y groupinstall "Development Tools"
+#sudo yum -y install gcc gcc-c++ make flex bison gperf ruby \
+#  openssl-devel freetype-devel fontconfig-devel libicu-devel sqlite-devel \
+#  libpng-devel libjpeg-devel
+
+#install postgresql
+echo "- - - Installing Postgres - - -"
+gem install --no-ri --no-rdoc puppet:3.7.5
+puppet module install puppetlabs-apt --version "<2.0.0"
+puppet module install puppetlabs-postgresql
+puppet apply /vagrant/manifests/postgres.pp
+#puppet does not configure headers.  So later installation of psycopg2 fails because libpq-fe.h is not found.
+#install postgresql-devel again to fix this (or fix the puppet installation).
+sudo yum -y install postgresql-devel
+#set known path to pgconfig so psycopg2 can install
+if [ -d /usr/pgsql-9.3/bin ]; then
+  export PATH=$PATH:/usr/pgsql-9.3/bin
+fi
+
+# TEMP
+sudo yum install -y gcc -q
+sudo systemctl stop firewalld
+
+# install MQ stuff
+echo "- - - Installing Erlang and RabbitMQ - - -"
+puppet module install garethr-erlang
+puppet apply /vagrant/manifests/erlang.pp
+puppet module install puppetlabs-rabbitmq
+puppet apply /vagrant/manifests/rabbit.pp
+
+yum install -y git
+
+cd /vagrant
+
+pip install -r requirements.txt
