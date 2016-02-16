@@ -55,9 +55,3 @@ curl localhost:5000//multiproc/1000
 ```
 
 The batch parameter indicates how many message ids will be included in any message.
-
-
-### To send a message to the read_ids queue
-```
-curl -X POST -d "this is a test message" -H "Content-Type: application/text" localhost:5000/message
-```
