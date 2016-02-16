@@ -51,7 +51,7 @@ curl localhost:5000/simpleread
 
 or
 
-curl localhost:5000//multiproc/1000
+curl localhost:5000/multiproc/1000
 ```
 
 The batch parameter indicates how many message ids will be included in any message.
